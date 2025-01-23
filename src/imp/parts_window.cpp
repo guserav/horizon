@@ -49,6 +49,15 @@ PartsWindow::PartsWindow(const Board &brd) : Gtk::Window(), board(brd), state_st
     tree_view->get_column(1)->set_sort_column(list_columns.qty);
     tree_view->append_column("Value", list_columns.value);
     tree_view->append_column("MPN", list_columns.MPN);
+    tree_view->get_column(3)->set_sort_column(list_columns.MPN);
+    store->set_sort_func(list_columns.MPN,
+                         [this](const Gtk::TreeModel::iterator &ia, const Gtk::TreeModel::iterator &ib) {
+                             Gtk::TreeModel::Row ra = *ia;
+                             Gtk::TreeModel::Row rb = *ib;
+                             Glib::ustring a = ra[list_columns.MPN];
+                             Glib::ustring b = rb[list_columns.MPN];
+                             return strcmp_natural(a, b);
+                         });
     tree_view_append_column_ellipsis(tree_view, "Package", list_columns.package, Pango::ELLIPSIZE_END)
             ->set_resizable(true);
     tree_view_append_column_ellipsis(tree_view, "Refdes", list_columns.refdes, Pango::ELLIPSIZE_END)
@@ -76,13 +85,8 @@ PartsWindow::PartsWindow(const Board &brd) : Gtk::Window(), board(brd), state_st
     tree_view->set_search_equal_func([this](const Glib::RefPtr<Gtk::TreeModel> &model, int c,
                                             const Glib::ustring &needle, const Gtk::TreeModel::iterator &it) {
         auto cneedle = needle.casefold();
-        for (const auto &comp_uu : it->get_value(list_columns.components)) {
-            const auto &comp = board.block->components.at(comp_uu);
-            if (Glib::ustring(comp.refdes).casefold() == cneedle) {
-                return false; // found
-            }
-        }
-        return true; // not found
+        Glib::ustring mpn = (*it)[list_columns.MPN];
+        return mpn.casefold().find(cneedle) == Glib::ustring::npos;
     });
     store->set_sort_column(list_columns.refdes, Gtk::SORT_ASCENDING);
 
